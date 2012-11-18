@@ -19,7 +19,8 @@ int main(int argc, char *argv[], char *envp[])  //envp[] = array of environment 
 	
 	signal(SIGINT, handle_signal); //SIGINT = signal for CTRL-C
 	printf("%s ", SHELL_TAG);
-	while(c != EOF) {
+	while(c != EOF) //Shell will be terminated when getchar() returns end-of-file (CTRL-D)
+	{
 		c = getchar();
 		if(c == '\n')
 		{
