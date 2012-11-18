@@ -22,7 +22,11 @@ int main(int argc, char *argv[], char *envp[])  //envp[] = array of environment 
 	while(c != EOF) {
 		c = getchar();
 		if(c == '\n')
+		{
+		   //Operations start here
+		   printf("Operations start here... \n");
 			printf("%s ", SHELL_TAG);
+	   }
 	}
 	printf("\n");
 	return 0;
