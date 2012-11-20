@@ -7,10 +7,11 @@
 #define CMD_LEN 100
 
 typedef void (*sighandler_t)(int);
+
 char c = '\0';
 char* SHELL_TAG = "[SHELL v0.1]";
 
-void call_execve(char *cmd)
+void execute(char *cmd)
 {
 	int i;
 	if(fork() == 0) {
@@ -22,7 +23,7 @@ void call_execve(char *cmd)
 		
 		if(i < 0)
 		{
-			printf("%s: %s\n", cmd, "command not found");
+			printf("%s: %s\n", cmd, "*command not found*");
 			exit(1);		
 		}
 	} else {
@@ -36,7 +37,7 @@ void handle_signal(int signo) //Handler for CTRL-C signal
 	fflush(stdout); //flush output to stdout
 }
 
-int main(int argc, char *argv[], char *envp[])  //envp[] = array of environment vars
+int main(int numArgs, char **args, char **environment)
 {
    char c;
    char *cmd = malloc(sizeof(char) * CMD_LEN);
@@ -52,7 +53,7 @@ int main(int argc, char *argv[], char *envp[])  //envp[] = array of environment 
 		if(c == '\n')
 		{
 		   //printf("Operations start here... \n");
-		   call_execve(cmd);
+		   execute(cmd);
 			printf("%s ", SHELL_TAG);
 			bzero(cmd, CMD_LEN);
 	   }
