@@ -61,6 +61,17 @@ void populateArgs(char *input)
    strncat(shellArgs[i], "\0", 1);
 }
 
+void freeArgs()
+{
+   int i;
+   for(i = 0; shellArgs[i] != NULL; i++)
+   {
+      bzero(shellArgs[i], strlen(shellArgs[i]));
+      shellArgs[i] = NULL;
+      free(shellArgs[i]);
+   }
+}
+
 void execute(char *cmd)
 {
 	int i;
@@ -89,7 +100,7 @@ void handle_signal(int signo) //Handler for CTRL-C signal
 	fflush(stdout); //flush output to stdout
 }
 
-int main(int numArgs, char **args, char **environment)
+int main()
 {
    int i;
    char c;
@@ -114,20 +125,25 @@ int main(int numArgs, char **args, char **environment)
 		   
 		   /*Call to fork and execlp with input command*/
 		   execute(cmd);
-		   
-			/*
-			//DEBUGGING PURPOSES: displays shellArgs
-			for(i = 0; shellArgs[i] != NULL; i++) printf("%d: %s ", i, shellArgs[i]);
-			printf("\n");
-			*/
 			printf("%s ", SHELL_TAG);
+			
+			/*free and unset memory*/
+			freeArgs();
 			bzero(cmd, CMD_LEN);
+			bzero(temp, CMD_LEN+ARGS_LEN);
 	   }
 	   else
 	   {
 	      strncat(temp, &c, (size_t) 1);
 	   }
 	}
+	
+	/*free up memory*/
+	free(temp);
+	free(cmd);
+	for(i = 0; shellArgs[i] != NULL; i++) free(shellArgs[i]);
+	for(i = 0; shellEnv[i] != NULL; i++) free(shellEnv[i]);
+	
 	printf("\n");
 	return 0;
 }
