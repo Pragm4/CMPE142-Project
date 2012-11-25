@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
 
 /*Definitions*/
 #define CMD_LEN 100
@@ -18,9 +19,44 @@ char c = '\0';
 char *SHELL_TAG = "[SHELL v0.1]";
 char *shellArgs[ARGS_LEN];
 char *shellEnv[ENV_LEN];
+char *shellPaths;
 
-/*External Array tracking Environment Variables*/
-extern char **environ;
+void initializeEnv(char **envp)
+{
+   int i = 0;
+   while(envp[i] != NULL)
+   {
+      shellEnv[i] = (char*) malloc(sizeof(char) * (strlen(envp[i])+1));
+      memcpy(shellEnv[i], envp[i], strlen(envp[i]));
+      i++;
+   }
+}
+
+void initializePaths()
+{
+   char *p;
+   int i = 0;
+   printf("Setting Path...\n");
+   while(shellEnv[i] != NULL)
+   {
+      p = strstr(shellEnv[i], "PATH");
+      if(p != NULL && p - shellEnv[i] == 0)
+      {
+         shellPaths = (char*)malloc(sizeof(char) * (strlen(p)+1));
+         strncpy(shellPaths, p, strlen(p));
+         strncat(shellPaths, "\0", 1);
+         break;
+      }
+      i++;
+   }
+}
+
+void pathPrepend(char *cmd)
+{
+   int fd;
+   char *temp = cmd;
+   
+}
 
 void populateArgs(char *input)
 {
@@ -79,7 +115,7 @@ void execute(char *cmd)
 	
       /*UNDER CONSTRUCTION*/
       /*This command works, but takes no parameters or environment variables*/
-		i = execve(cmd, shellArgs, environ);
+		i = execve(cmd, shellArgs, NULL);
 		/*END OF CONSTRUCTION*/
 		
 		if(i < 0) //Command not found
@@ -100,7 +136,7 @@ void handle_signal(int signo) //Handler for CTRL-C signal
 	fflush(stdout); //flush output to stdout
 }
 
-int main()
+int main(int argc, char **argv, char **envp)
 {
    int i;
    char c;
@@ -110,7 +146,10 @@ int main()
 	//signal(SIGINT, SIG_IGN); //ignores SIGINT signal
 	signal(SIGINT, handle_signal); //SIGINT = signal for CTRL-C
 	
+	initializeEnv(envp);
+	initializePaths();
 	printf("%s ", SHELL_TAG);
+	
 	//Shell will be terminated when getchar() returns end-of-file (CTRL-D)
 	while(c != EOF)
 	{
@@ -122,6 +161,9 @@ int main()
 		   
 		   /*places first argument into command placeholder*/
 		   strcpy(cmd, shellArgs[0]);
+		   
+		   /*Finds and prepends full path to valid command*/
+		   pathPrepend(cmd);
 		   
 		   /*Call to fork and execlp with input command*/
 		   execute(cmd);
@@ -141,6 +183,7 @@ int main()
 	/*free up memory*/
 	free(temp);
 	free(cmd);
+	free(shellPaths);
 	for(i = 0; shellArgs[i] != NULL; i++) free(shellArgs[i]);
 	for(i = 0; shellEnv[i] != NULL; i++) free(shellEnv[i]);
 	
