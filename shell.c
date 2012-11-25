@@ -75,8 +75,31 @@ void initializePaths()
 void pathPrepend(char *cmd)
 {
    int fd;
-   char *temp = cmd;
+   char temp[CMD_LEN];
+   int i = 0;
    
+   fd = open(cmd, O_RDONLY);
+   if(fd > 0) return;
+   
+   while(shellPaths[i] != NULL)
+   {      
+      //executable = shellPath + '/' + command 
+      strncpy(temp, shellPaths[i], strlen(shellPaths[i]));
+      strncat(temp, "/", 1);
+      strncat(temp, cmd, strlen(cmd));
+      
+      //Check if executable is valid      
+      fd = open(temp, O_RDONLY);
+      if(fd > 0)
+      {
+         close(fd);
+         bzero(cmd, CMD_LEN);
+         strncpy(cmd, temp, strlen(temp));
+         return;
+      }
+      bzero(temp, CMD_LEN);
+      i++;
+   }
 }
 
 void populateArgs(char *input)
@@ -136,7 +159,7 @@ void execute(char *cmd)
 	
       /*UNDER CONSTRUCTION*/
       /*This command works, but takes no parameters or environment variables*/
-		i = execve(cmd, shellArgs, NULL);
+		i = execve(cmd, shellArgs, shellEnv);
 		/*END OF CONSTRUCTION*/
 		
 		if(i < 0) //Command not found
