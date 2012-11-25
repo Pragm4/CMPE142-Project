@@ -10,6 +10,7 @@
 #define ARGS_LEN 100 //Array of argument strings
 #define ARG_LEN 50   //Single argument string
 #define ENV_LEN 100
+#define PATHS_LEN 50
 
 /*Type definition for signal handling*/
 typedef void (*sighandler_t)(int);
@@ -19,7 +20,7 @@ char c = '\0';
 char *SHELL_TAG = "[SHELL v0.1]";
 char *shellArgs[ARGS_LEN];
 char *shellEnv[ENV_LEN];
-char *shellPaths;
+char *shellPaths[PATHS_LEN];
 
 void initializeEnv(char **envp)
 {
@@ -28,24 +29,44 @@ void initializeEnv(char **envp)
    {
       shellEnv[i] = (char*) malloc(sizeof(char) * (strlen(envp[i])+1));
       memcpy(shellEnv[i], envp[i], strlen(envp[i]));
-      i++;
+      i++;  
    }
 }
 
 void initializePaths()
 {
    char *p;
-   int i = 0;
-   printf("Setting Path...\n");
+   char *q;
+   int i, j;
+   
+   i = 0;
    while(shellEnv[i] != NULL)
    {
       p = strstr(shellEnv[i], "PATH");
       if(p != NULL && p - shellEnv[i] == 0)
       {
-         shellPaths = (char*)malloc(sizeof(char) * (strlen(p)+1));
-         strncpy(shellPaths, p, strlen(p));
-         strncat(shellPaths, "\0", 1);
-         break;
+         j = 0;
+         p = strstr(p, "=");
+         while(p != NULL)
+         {
+            p++;
+            q = strstr(p, ":");
+            if(q == NULL)
+            {
+               shellPaths[j] = (char*) malloc(sizeof(char)*(strlen(p)+1));
+               strncpy(shellPaths[j], p, strlen(p));
+               strncat(shellPaths[j], "\0", 1);
+            }
+            else
+            {
+               shellPaths[j] = (char*) malloc(sizeof(char)*(q-p+1));
+               strncpy(shellPaths[j], p, q-p);
+               strncat(shellPaths[j], "\0", 1);
+            }
+            j++;
+            p = strstr(p, ":");
+         }
+         break;      
       }
       i++;
    }
@@ -183,9 +204,9 @@ int main(int argc, char **argv, char **envp)
 	/*free up memory*/
 	free(temp);
 	free(cmd);
-	free(shellPaths);
 	for(i = 0; shellArgs[i] != NULL; i++) free(shellArgs[i]);
 	for(i = 0; shellEnv[i] != NULL; i++) free(shellEnv[i]);
+	for(i = 0; shellPaths[i] != NULL; i++) free(shellPaths[i]);
 	
 	printf("\n");
 	return 0;
