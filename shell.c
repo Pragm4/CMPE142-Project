@@ -191,3 +191,26 @@ int main(int argc, char **argv, char **envp)
 	return 0;
 }
 
+/* Avi's psuedocode added on Nov 24
+ while (program is running)
+ {
+ //initialize timer for process
+ int processtimer = 0;
+ //CPUMAX=99:200 (programs can run at most 200 seconds with CPU utilization of 99% or more.
+ if (CPUMAX == 99 && processtimer == 200)
+ {
+ //kill process
+ 
+ }
+ //MEMMAX=50M:360 (programs cannot exceede 50Megabytes for more than 360 seconds)
+ if (MEMMAX == 50000000 && processtimer == 360)
+ {
+ //kill process
+ }
+ //TIMEMAX=250 (programs can’t run for more than 250 seconds)
+ if (TIMEMAX == 250)
+ {
+ //kill process
+ }
+ }
+*/
