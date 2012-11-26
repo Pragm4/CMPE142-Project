@@ -12,14 +12,19 @@ char *shellArgs[MAX_SIZE];
 char *shellEnv[MAX_SIZE];
 char *shellPaths[MAX_SIZE];
 
+/*Prototypes - Alphabetically*/
 void execute(char *cmd);
 void freeArgs();
+char* getEV(char *var);
 void handle_signal(int signo);
 void initializeEnv(char **envp);
 void initializePaths();
 void pathPrepend(char *cmd);
 void populateArgs(char *input);
 void processCommand(char *temp);
+void setEV(const char *var, char *value);
+
+/*Functions ordered according to prototype list*/
 
 void execute(char *cmd)
 {
@@ -49,6 +54,27 @@ void freeArgs()
       shellArgs[i] = NULL;
       free(shellArgs[i]);
    }
+}
+
+char *getEV(char *var)
+{
+	char *x;
+	char *temp = (char*)malloc(sizeof(char) * (strlen(var)+2));
+	strncpy(temp, var, strlen(var));
+	strncat(temp, "=", 1);
+	strncat(temp, "\0", 1);
+	
+	int i = 0;
+	while(shellEnv[i] != NULL)
+	{
+		x = strstr(shellEnv[i], temp);
+		if(x != NULL && x - shellEnv[i] == 0)
+		{
+			return strstr(shellEnv[i], "=")+1;
+		}
+		i++;
+	}
+	return NULL;
 }
 
 void handle_signal(int signo) //Handler for CTRL-C signal
@@ -184,4 +210,32 @@ void processCommand(char *temp)
    strcpy(cmd, shellArgs[0]);
    pathPrepend(cmd);
    execute(cmd);
+}
+
+void setEV(const char *var, char *value)
+{
+	char *temp;
+	int i = 0;
+	while(shellEnv[i] != NULL)
+	{
+		temp = strstr(shellEnv[i], var);
+		if(temp != NULL && temp - shellEnv[i] == 0)
+		{
+			bzero(shellEnv[i], strlen(shellEnv[i]));
+			shellEnv[i] = NULL;
+			free(shellEnv[i]);
+			shellEnv[i] = (char*)malloc(sizeof(char) * (strlen(var)+strlen(value)+2));
+			strncpy(shellEnv[i], var, strlen(var));
+			strncat(shellEnv[i], "=", 1);
+			strncat(shellEnv[i], value, strlen(value));
+			strncat(shellEnv[i], "\0", 1);
+			return;
+		}
+		i++;
+	}
+	shellEnv[i] = (char*)malloc(sizeof(char) * (strlen(var)+strlen(value)+2));
+	strncpy(shellEnv[i], var, strlen(var));
+	strncat(shellEnv[i], "=", 1);
+	strncat(shellEnv[i], value, strlen(value));
+	strncat(shellEnv[i], "\0", 1);
 }
