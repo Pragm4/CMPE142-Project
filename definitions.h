@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <string.h>
+#include <fcntl.h>
+#include <math.h>
+
 /*Definitions*/
 #define MAX_SIZE 50
 #define MAX_LEN 100
@@ -15,22 +23,79 @@ char *shellPaths[MAX_SIZE];
 /*Prototypes - Alphabetically*/
 void execute(char *cmd);
 void freeArgs();
-char* getEV(char *var);
+char *getEV(char *var);
 void handle_signal(int signo);
 void initializeEnv(char **envp);
 void initializePaths();
+int parseShellCommands(char *cmd);
 void pathPrepend(char *cmd);
 void populateArgs(char *input);
 void processCommand(char *temp);
-void setEV(const char *var, char *value);
+void setEV_i(const char *var, int value);
+void setEV_s(const char *var, char *value);
+
+void executeSeries(char *var, int floor, int ceil)
+{
+	char *commands[MAX_SIZE];
+	char *temp;
+	int i;
+	
+	for(i = 0; i < MAX_SIZE; i++) commands[i] = NULL;
+	
+	//set EV to floor and proceed
+	//temp = (char*)malloc(sizeof(char)*11);
+	//sprintf(temp, "%d\0", floor);
+	//printf("temp: %s\n", temp);
+	setEV_i(var, floor);
+	printf("%s=%s\n", var, getEV(var));
+	//bzero(temp, strlen(temp));
+	//free(temp);
+	
+	//Input series of commands
+	i=0;
+	do
+	{
+		temp = (char*)malloc(sizeof(char)*MAX_LEN);
+		bzero(temp, MAX_LEN);
+		gets(temp);
+		
+		if(strlen(temp) == 0) continue;
+		if(!strcmp(temp, "forend")) break;
+		
+		commands[i] = (char*)malloc(sizeof(char)*(strlen(temp)+1));
+		strncpy(commands[i], temp, strlen(temp));
+		strncat(commands[i], "\0", 1);
+		
+		bzero(temp, MAX_LEN);
+		i++;
+	}while(i < MAX_SIZE);
+	
+	i=0;
+/*
+	for(i = atoi(getEV(var)); i < ceil; i = atoi(getEV(var)))
+	{
+		//execute commands
+		i++;
+		setEV(var, i);
+	}
+*/
+	while(commands[i] != NULL)
+	{
+		printf("%s\n", commands[i]);
+		bzero(commands[i], strlen(commands[i]));
+		commands[i] = NULL;
+		free(commands[i]);
+		i++;
+	}
+}
 
 /*Functions ordered according to prototype list*/
 
 void execute(char *cmd)
 {
 	int i;
-	if(fork() == 0) {
-
+	if(fork() == 0)
+	{
 		i = execve(cmd, shellArgs, shellEnv);
 		
 		if(i < 0) //Command not found
@@ -133,6 +198,42 @@ void initializePaths()
    }
 }
 
+int parseShellCommands(char *cmd)
+{
+	char *iter;
+	char *floor;
+	char *ceil;
+	char *temp1;
+	char *temp2;
+	temp1 = strstr(cmd, "For ");
+	if(temp1 != NULL && temp1 - cmd == 0)
+	{
+		temp1 = temp1 + strlen("For ");
+		temp2 = strstr(temp1, " ");
+		
+		iter = (char*)malloc(sizeof(char)*(temp2-temp1+1));
+		strncpy(iter, temp1, temp2-temp1);
+		strncat(iter, "\0", 1);
+		
+		temp1 = temp2+1;
+		temp2 = strstr(temp1, " ");
+		
+		floor = (char*)malloc(sizeof(char)*(temp2-temp1+1));
+		strncpy(floor, temp1, temp2-temp1);
+		strncat(floor, "\0", 1);
+		
+		temp1 = temp2+1;
+		
+		ceil = (char*)malloc(sizeof(char)*(strlen(temp1)+1));
+		strncpy(ceil, temp1, strlen(temp1));
+		strncat(ceil, "\0", 1);
+		
+		executeSeries(iter, atoi(floor), atoi(ceil));
+		return 1;
+	}
+	return 0;
+}
+
 void pathPrepend(char *cmd)
 {
    int fd;
@@ -212,7 +313,15 @@ void processCommand(char *temp)
    execute(cmd);
 }
 
-void setEV(const char *var, char *value)
+void setEV_i(const char *var, int value)
+{
+	int valueDigits = log10f(value)+1;
+	char *tempValue = (char*)malloc(sizeof(char)*valueDigits);
+	sprintf(tempValue, "%d", value);
+	setEV_s(var, tempValue);
+}
+
+void setEV_s(const char *var, char *value)
 {
 	char *temp;
 	int i = 0;
