@@ -20,13 +20,12 @@ int main(int argc, char **argv, char **envp)
 		c = getchar();
 		if(c == '\n')
 		{
-			executeSeries("X", 0, 0);
-			//if(parseShellCommands(temp));
-		   //else processCommand(temp);
+			if(parseShellCommands(temp));
+		   else processCommand(temp);
 			printf("%s ", SHELL_TAG);
 			
 			/*free and unset memory*/
-			freeArgs();
+			
 			bzero(temp, MAX_LEN);
 	   }
 	   else

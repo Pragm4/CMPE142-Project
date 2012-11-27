@@ -22,6 +22,7 @@ char *shellPaths[MAX_SIZE];
 
 /*Prototypes - Alphabetically*/
 void execute(char *cmd);
+void executeSeries(char *var, int floor, int ceil);
 void freeArgs();
 char *getEV(char *var);
 void handle_signal(int signo);
@@ -31,63 +32,8 @@ int parseShellCommands(char *cmd);
 void pathPrepend(char *cmd);
 void populateArgs(char *input);
 void processCommand(char *temp);
-void setEV_i(const char *var, int value);
+void setEV_i(const char *var, int value); //Calls on setEV_s after converting value to string
 void setEV_s(const char *var, char *value);
-
-void executeSeries(char *var, int floor, int ceil)
-{
-	char *commands[MAX_SIZE];
-	char *temp;
-	int i;
-	
-	for(i = 0; i < MAX_SIZE; i++) commands[i] = NULL;
-	
-	//set EV to floor and proceed
-	//temp = (char*)malloc(sizeof(char)*11);
-	//sprintf(temp, "%d\0", floor);
-	//printf("temp: %s\n", temp);
-	setEV_i(var, floor);
-	printf("%s=%s\n", var, getEV(var));
-	//bzero(temp, strlen(temp));
-	//free(temp);
-	
-	//Input series of commands
-	i=0;
-	do
-	{
-		temp = (char*)malloc(sizeof(char)*MAX_LEN);
-		bzero(temp, MAX_LEN);
-		gets(temp);
-		
-		if(strlen(temp) == 0) continue;
-		if(!strcmp(temp, "forend")) break;
-		
-		commands[i] = (char*)malloc(sizeof(char)*(strlen(temp)+1));
-		strncpy(commands[i], temp, strlen(temp));
-		strncat(commands[i], "\0", 1);
-		
-		bzero(temp, MAX_LEN);
-		i++;
-	}while(i < MAX_SIZE);
-	
-	i=0;
-/*
-	for(i = atoi(getEV(var)); i < ceil; i = atoi(getEV(var)))
-	{
-		//execute commands
-		i++;
-		setEV(var, i);
-	}
-*/
-	while(commands[i] != NULL)
-	{
-		printf("%s\n", commands[i]);
-		bzero(commands[i], strlen(commands[i]));
-		commands[i] = NULL;
-		free(commands[i]);
-		i++;
-	}
-}
 
 /*Functions ordered according to prototype list*/
 
@@ -107,6 +53,51 @@ void execute(char *cmd)
 	else //Command found
 	{
 		wait(NULL);
+	}
+}
+
+void executeSeries(char *var, int floor, int ceil)
+{
+	char *commands[MAX_SIZE];
+	char *temp;
+	int i,j;
+	
+	for(i = 0; i < MAX_SIZE; i++) commands[i] = NULL;
+	
+	setEV_i(var, floor);
+
+	//Input series of commands
+	i=0;
+	do
+	{
+		temp = (char*)malloc(sizeof(char)*MAX_LEN);
+		bzero(temp, MAX_LEN);
+		gets(temp);
+		
+		if(strlen(temp) == 0) continue;
+		if(!strcmp(temp, "forend")) break;
+		
+		commands[i] = (char*)malloc(sizeof(char)*(strlen(temp)+1));
+		strncpy(commands[i], temp, strlen(temp));
+		strncat(commands[i], "\0", 1);
+		
+		bzero(temp, MAX_LEN);
+		i++;
+	}while(i < MAX_SIZE);
+
+	for(i = atoi(getEV(var)); i < ceil; setEV_i(var, ++i))
+	{	
+		printf("(i=%d)\n", i);
+		j = 0;
+		while(commands[j] != NULL) processCommand(commands[j++]);
+	}
+
+	while(commands[i] != NULL)
+	{
+		bzero(commands[i], strlen(commands[i]));
+		commands[i] = NULL;
+		free(commands[i]);
+		i++;
 	}
 }
 
@@ -311,12 +302,16 @@ void processCommand(char *temp)
    strcpy(cmd, shellArgs[0]);
    pathPrepend(cmd);
    execute(cmd);
+   freeArgs();
 }
 
 void setEV_i(const char *var, int value)
 {
-	int valueDigits = log10f(value)+1;
-	char *tempValue = (char*)malloc(sizeof(char)*valueDigits);
+	int valueDigits;
+	char *tempValue;
+	if(value == 0) valueDigits = 1;
+	else valueDigits = log10(abs(value))+1;
+	tempValue = (char*)malloc(sizeof(char)*valueDigits);
 	sprintf(tempValue, "%d", value);
 	setEV_s(var, tempValue);
 }
