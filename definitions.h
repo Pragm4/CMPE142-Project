@@ -85,11 +85,12 @@ void executeSeries(char *var, int floor, int ceil)
 		i++;
 	}while(i < MAX_SIZE);
 
-	for(i = atoi(getEV(var)); i < ceil; setEV_i(var, ++i))
+	for(i = atoi(getEV(var)); i < ceil; setEV_i(var, i))
 	{	
 		printf("(i=%d)\n", i);
 		j = 0;
 		while(commands[j] != NULL) processCommand(commands[j++]);
+		i++;
 	}
 
 	while(commands[i] != NULL)
@@ -191,32 +192,32 @@ void initializePaths()
 
 int parseShellCommands(char *cmd)
 {
-	char *iter;
-	char *floor;
-	char *ceil;
-	char *temp1;
-	char *temp2;
-	temp1 = strstr(cmd, "For ");
-	if(temp1 != NULL && temp1 - cmd == 0)
+	int i;
+	char *iter, *floor, *ceil;
+	//char *floor;
+	//char *ceil;
+	char *temp;
+	temp = strstr(cmd, "For ");
+	if(temp != NULL && temp - cmd == 0)
 	{
-		temp1 = temp1 + strlen("For ");
-		temp2 = strstr(temp1, " ");
-		
-		iter = (char*)malloc(sizeof(char)*(temp2-temp1+1));
-		strncpy(iter, temp1, temp2-temp1);
+		temp = temp + strlen("For ");
+		i = index(temp, ' ') - temp;
+
+		iter = (char*)malloc(sizeof(char)*(i+1));
+		strncpy(iter, temp, i);
 		strncat(iter, "\0", 1);
-		
-		temp1 = temp2+1;
-		temp2 = strstr(temp1, " ");
-		
-		floor = (char*)malloc(sizeof(char)*(temp2-temp1+1));
-		strncpy(floor, temp1, temp2-temp1);
+
+		temp = temp + i + 1;
+		i = index(temp, ' ') - temp;
+
+		floor = (char*)malloc(sizeof(char)*(i+1));
+		strncpy(floor, temp, i);
 		strncat(floor, "\0", 1);
 		
-		temp1 = temp2+1;
+		temp = temp + i + 1;
 		
-		ceil = (char*)malloc(sizeof(char)*(strlen(temp1)+1));
-		strncpy(ceil, temp1, strlen(temp1));
+		ceil = (char*)malloc(sizeof(char)*(strlen(temp)+1));
+		strncpy(ceil, temp, strlen(temp));
 		strncat(ceil, "\0", 1);
 		
 		executeSeries(iter, atoi(floor), atoi(ceil));
