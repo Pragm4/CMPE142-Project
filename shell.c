@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <string.h>
-#include <fcntl.h>
-
 #include "definitions.h"
 
 int main(int argc, char **argv, char **envp)
@@ -27,7 +20,9 @@ int main(int argc, char **argv, char **envp)
 		c = getchar();
 		if(c == '\n')
 		{
-		   processCommand(temp);
+			executeSeries("X", 0, 0);
+			//if(parseShellCommands(temp));
+		   //else processCommand(temp);
 			printf("%s ", SHELL_TAG);
 			
 			/*free and unset memory*/
