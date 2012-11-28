@@ -4,8 +4,6 @@
 #include <signal.h>
 #include <string.h>
 #include <fcntl.h>
-#include <math.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -13,7 +11,8 @@
 
 /*Definitions*/
 #define MAX_SIZE 50
-#define MAX_LEN 100
+#define MAX_LEN 200
+#define RESERVED " !@#$%^&*()_+1234567890,.?<>{}\\|`~\"\'\0\1\2\3\4\5\6\7\a\b\f\n\r\t\v"
 
 /*Type definition for signal handling*/
 typedef void (*sighandler_t)(int);
@@ -33,22 +32,13 @@ char *getEV(char *var);
 void handle_signal(int signo);
 void initializeEnv(char **envp);
 void initializePaths();
+void interprateEVs(char **cmd);
 int parseShellCommands(char *cmd);
 void pathPrepend(char *cmd);
 void populateArgs(char *input);
 void processCommand(char *temp);
 void setEV_i(const char *var, int value); //Calls on setEV_s after converting value to string
 void setEV_s(const char *var, char *value);
-
-void interprateEVs(char **cmd)
-{
-	int i;
-	while(index(*cmd, '$') != NULL)
-	{
-		i = index(*cmd, '$') - *cmd;
-	}
-}
-
 
 /*Functions ordered according to prototype list*/
 
@@ -101,13 +91,19 @@ void executeSeries(char *var, int floor, int ceil)
 	}while(i < MAX_SIZE);
 
 	for(i = atoi(getEV(var)); i < ceil; setEV_i(var, i))
-	{	
-		printf("(i=%d)\n", i);
+	{
 		j = 0;
-		while(commands[j] != NULL) processCommand(commands[j++]);
+		while(commands[j] != NULL)
+		{
+			bzero(temp, MAX_LEN);
+			strcpy(temp, commands[j]);
+			processCommand(temp);
+			j++;
+		}
 		i++;
 	}
 
+	i = 0;
 	while(commands[i] != NULL)
 	{
 		bzero(commands[i], strlen(commands[i]));
@@ -205,12 +201,50 @@ void initializePaths()
    }
 }
 
+void interprateEVs(char **cmd)
+{
+	int i, j, n;
+	char *temp, *rv, *ev;
+	
+	ev = (char*)malloc(sizeof(char)*MAX_LEN);
+	rv = (char*)malloc(sizeof(char)*MAX_LEN);
+	temp = (char*)malloc(sizeof(char)*MAX_LEN);
+	bzero(ev, MAX_LEN);
+	bzero(rv, MAX_LEN);
+	bzero(temp, strlen(*cmd));
+	memcpy(temp, *cmd, MAX_LEN);
+	
+	while(*temp != '\0')
+	{
+		if(*temp == '$')
+		{
+			temp++;
+			while(index(RESERVED, *temp) == NULL && *temp != '\0')
+			{
+				strncat(ev, temp, 1);
+				temp++;
+			}
+			strcat(rv, getEV(ev));
+			bzero(ev, strlen(ev));
+		}
+		else
+		{
+			strncat(rv, temp, 1);
+			temp++;
+		}
+	}
+	bzero(*cmd, MAX_LEN);
+	memcpy(*cmd, rv, MAX_LEN);
+}
+
 int parseShellCommands(char *cmd)
 {
 	int i;
 	struct stat fileStats;
 	char *iter, *floor, *ceil;
 	char *temp;
+	
+	interprateEVs(&cmd);
 	
 	//Check EV assignment
 	temp = index(cmd, '=');
@@ -323,11 +357,7 @@ void populateArgs(char *input)
       {
          strncat(arg, temp, 1);
       }
-      temp++; //increment pointer to string of args (temp[i] = temp[i+1])
-      /*
-      //DEBUGGING PURPOSES: Display arg string by character
-      printf("temp = %c\n", *temp);
-      */
+      temp++;
    }
    shellArgs[i] = (char*) malloc(sizeof(char)* (strlen(arg) + 1) );
    strncpy(shellArgs[i], arg, strlen(arg));
@@ -337,20 +367,22 @@ void populateArgs(char *input)
 void processCommand(char *temp)
 {
    char cmd[MAX_LEN];
-   populateArgs(temp);
-   strcpy(cmd, shellArgs[0]);
-   pathPrepend(cmd);
-   execute(cmd);
-   freeArgs();
+   int i;
+   i = parseShellCommands(temp);
+   if(i == 0)
+   {
+		populateArgs(temp);
+		strcpy(cmd, shellArgs[0]);
+		pathPrepend(cmd);
+		execute(cmd);
+	   freeArgs();
+	}
 }
 
 void setEV_i(const char *var, int value)
 {
-	int valueDigits;
 	char *tempValue;
-	if(value == 0) valueDigits = 1;
-	else valueDigits = log10(abs(value))+1;
-	tempValue = (char*)malloc(sizeof(char)*valueDigits);
+	tempValue = (char*)malloc(sizeof(char)*10);
 	sprintf(tempValue, "%d", value);
 	setEV_s(var, tempValue);
 }
