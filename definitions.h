@@ -6,6 +6,11 @@
 #include <fcntl.h>
 #include <math.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
 /*Definitions*/
 #define MAX_SIZE 50
 #define MAX_LEN 100
@@ -34,6 +39,16 @@ void populateArgs(char *input);
 void processCommand(char *temp);
 void setEV_i(const char *var, int value); //Calls on setEV_s after converting value to string
 void setEV_s(const char *var, char *value);
+
+void interprateEVs(char **cmd)
+{
+	int i;
+	while(index(*cmd, '$') != NULL)
+	{
+		i = index(*cmd, '$') - *cmd;
+	}
+}
+
 
 /*Functions ordered according to prototype list*/
 
@@ -131,7 +146,7 @@ char *getEV(char *var)
 		}
 		i++;
 	}
-	return NULL;
+	return "";
 }
 
 void handle_signal(int signo) //Handler for CTRL-C signal
