@@ -4,7 +4,7 @@ int main(int argc, char **argv, char **envp)
 {
    int i;
    char c;
-   char temp[MAX_LEN]; //commandLength + maxArgs * maxArgLength
+   char *temp = (char*)malloc(sizeof(char)*MAX_LEN);
    
 	//signal(SIGINT, SIG_IGN); //ignores SIGINT signal
 	signal(SIGINT, handle_signal); //SIGINT = signal for CTRL-C
@@ -20,8 +20,8 @@ int main(int argc, char **argv, char **envp)
 		c = getchar();
 		if(c == '\n')
 		{
-			if(parseShellCommands(temp));
-		   else processCommand(temp);
+			strncat(temp, "\0", 1);
+		   processCommand(temp);
 			printf("%s ", SHELL_TAG);
 			
 			/*free and unset memory*/
