@@ -50,7 +50,7 @@ void execute(char *cmd)
 			exit(1);		
 		}
 	}
-	else //Command found
+	else
 	{
 		wait(NULL);
 	}
@@ -193,10 +193,31 @@ void initializePaths()
 int parseShellCommands(char *cmd)
 {
 	int i;
+	struct stat fileStats;
 	char *iter, *floor, *ceil;
-	//char *floor;
-	//char *ceil;
 	char *temp;
+	
+	//Check EV assignment
+	temp = index(cmd, '=');
+	if(temp != NULL)
+	{
+		i = temp - cmd;
+		if(i > 0)
+		{
+			temp++;
+			cmd = cmd + i;
+			strncpy(cmd, "\0", 1);
+			cmd = cmd - i;
+			setEV_s(cmd, temp);
+		}
+		else
+		{
+			printf("%s\n", "Cannot assign environment variable: Must supply a variable name.");
+		}
+		return 1;
+	}
+	
+	//Check for For <var> <floor> <ceil> command
 	temp = strstr(cmd, "For ");
 	if(temp != NULL && temp - cmd == 0)
 	{
@@ -233,8 +254,11 @@ void pathPrepend(char *cmd)
    int i = 0;
    
    fd = open(cmd, O_RDONLY);
-   if(fd > 0) return;
-   
+   if(fd > 0)
+   {
+   	close(fd);
+   	return;
+   }
    while(shellPaths[i] != NULL)
    {      
       //executable = shellPath + '/' + command 
@@ -254,7 +278,6 @@ void pathPrepend(char *cmd)
       bzero(temp, MAX_LEN);
       i++;
    }
-   //bzero(cmd, MAX_LEN);
 }
 
 void populateArgs(char *input)
