@@ -12,7 +12,7 @@
 /*Definitions*/
 #define MAX_SIZE 50
 #define MAX_LEN 200
-#define RESERVED " !@#$%^&*()_+1234567890,.?<>{}\\|`~\"\'\0\1\2\3\4\5\6\7\a\b\f\n\r\t\v"
+#define RESERVED " !@#$%^&*()-_=+1234567890,.<>{}\\|`~\"\'\0\1\2\3\4\5\6\7\a\b\f\n\r\t\v"
 
 /*Type definition for signal handling*/
 typedef void (*sighandler_t)(int);
@@ -240,7 +240,6 @@ void interprateEVs(char **cmd)
 int parseShellCommands(char *cmd)
 {
 	int i;
-	struct stat fileStats;
 	char *iter, *floor, *ceil;
 	char *temp;
 	
