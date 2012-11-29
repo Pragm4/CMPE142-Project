@@ -3,7 +3,7 @@
 int main(int argc, char **argv, char **envp)
 {
    int i;
-   char c;
+   char c = 0;
    char *temp = (char*)malloc(sizeof(char)*MAX_LEN);
    
 	//signal(SIGINT, SIG_IGN); //ignores SIGINT signal
@@ -21,17 +21,18 @@ int main(int argc, char **argv, char **envp)
 		if(c == '\n')
 		{
 			strncat(temp, "\0", 1);
-		   processCommand(temp);
+			processCommand(temp);
+
 			printf("%s ", SHELL_TAG);
-			
+
 			/*free and unset memory*/
 			
 			bzero(temp, MAX_LEN);
-	   }
-	   else
-	   {
-	      strncat(temp, &c, (size_t) 1);
-	   }
+		}
+		else
+		{
+			strncat(temp, &c, (size_t) 1);
+		}
 	}
 	
 	/*free up memory*/
@@ -59,7 +60,7 @@ int main(int argc, char **argv, char **envp)
  {
  //kill process
  }
- //TIMEMAX=250 (programs can’t run for more than 250 seconds)
+ //TIMEMAX=250 (programs cannot run for more than 250 seconds)
  if (TIMEMAX == 250)
  {
  //kill process

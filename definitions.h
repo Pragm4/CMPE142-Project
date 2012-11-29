@@ -376,13 +376,14 @@ void processCommand(char *temp)
    i = parseShellCommands(temp);
    if(i == 0)
    {
-		populateArgs(temp);
-		strcpy(cmd, shellArgs[0]);
-		pathPrepend(cmd);
-        printArgs();
+	populateArgs(temp);
+	strcpy(cmd, shellArgs[0]);
+	pathPrepend(cmd);
+        //printArgs();
         if (checkBuiltInCommands() == 0)
             execute(cmd, shellArgs);
-	   freeArgs();
+	    freeArgs();
+	    usleep(100000);    // sleep 0.1 sec
 	}
 }
 
@@ -405,7 +406,8 @@ int checkBuiltInCommands()
     int i = 0;  // shellArgs index counter
     int cur_i = 0;
     int args = 0;   // number of arguments
-    int hasPiped = 0;
+    int hasPipe = 0;
+    char* cond = NULL;
     arg1[0] = arg2[0] = NULL;
     while (shellArgs[i] != NULL)
     {
@@ -414,29 +416,35 @@ int checkBuiltInCommands()
             memcpy(arg2, &shellArgs[cur_i], sizeof(char*) * args);  // copy sub array of pointers
             arg2[args] = NULL;
             pipeCommand(arg1, arg2);
+            printf("after pipe\n");
             arg1 = arg2;
             *arg2 = NULL;
-            args = -1;
-            hasPiped = 1;   // flag pipe has been done
+            args = 0;
+            hasPipe = 1;
         }
         
-        if (strcmp("|", shellArgs[i]) == 0 &&
-            shellArgs[i+1] != NULL )
+        if ((strcmp("|", shellArgs[i]) == 0 ||
+             strcmp("&&", shellArgs[i]) == 0 ||
+             strcmp("||", shellArgs[i]) == 0) &&   // check for '|' character
+             shellArgs[i+1] != NULL )
+        //if (strcmp("|", shellArgs[i]) == 0 && shellArgs[i+1] != NULL )
         {
             if (*arg1 == NULL)
             {
                 memcpy(arg1, &shellArgs[cur_i], sizeof(char*) * args);  // copy sub array of pointers
-                //printf("arg1 %s\n", arg1[0]);
                 arg1[args] = NULL;                              // set null pointer
                 args = 0;                                      // reset args
                 cur_i = i+1;
+                //if (strcmp("|", shellArgs[i]) == 0)
+                    //hasPipe = 1;   // doing a pipe
+                //else
+                //    cond = shellArgs[i];
             }
-            
         }
         i++;
         args++;
     }
-    return hasPiped;    // if 1, don't execute single command
+    return hasPipe;    // if 1, don't execute single command
 }
 
 void setEV_i(const char *var, int value)
@@ -480,10 +488,51 @@ void setEV_s(const char *var, char *value)
 This pipes the output of cmd1 into cmd2.
 **************************/
 
+#if 1
+
+#define fprintf(a,b)
+
+void pipeCommand(char** cmd1, char** cmd2) {
+  int fds[2]; // file descriptors
+
+    printf("inside pipe %s %s %s %s\n", cmd1[0], cmd1[1], cmd2[0], cmd2[1]);
+    pipe(fds);
+    // child process #1
+    if (fork() == 0) {
+                    // Reassign stdout to fds[1] end of pipe.
+                    //dup2(fds[1], STDOUT_FILENO);
+        dup2(fds[1], 1);
+        close(fds[0]);
+        close(fds[1]);
+                    // Execute the first command.
+        fprintf(stderr, "before cmd1\n");
+        execvpe(cmd1[0], cmd1, shellEnv);
+    }
+    if (fork() == 0) {
+                   // Reassign stdin to fds[0] end of pipe.
+                   //dup2(fds[0], STDIN_FILENO);
+        dup2(fds[0], 0);
+        close(fds[0]);
+        close(fds[1]);
+                   // Execute the second command.
+                   // child process #2
+        wait(NULL);
+        fprintf(stderr, "before cmd2\n");
+        execvpe(cmd2[0], cmd2, shellEnv);
+    }
+    wait(NULL);
+    close(fds[0]);
+    close(fds[1]);
+    usleep(200000);    // sleep 0.2 sec
+}
+#endif
+
+#if 0
 void pipeCommand(char** cmd1, char** cmd2)
 {
   int pipefd[2];
   int pid;
+  printf("inside pipe %s %s %s %s\n", cmd1[0], cmd1[1], cmd2[0], cmd2[1]);
   pipe(pipefd);
 
   pid = fork();
@@ -492,16 +541,24 @@ void pipeCommand(char** cmd1, char** cmd2)
     {
       dup2(pipefd[0], 0);
       close(pipefd[1]);
-      wait(NULL);
+      //wait(NULL);
+      //fprintf(stderr, "before cmd2\n");
       execvp(cmd2[0], cmd2);
+      //fprintf(stderr, "after cmd2\n");
     }
   else
     {
       dup2(pipefd[1], 1);
       close(pipefd[0]);
-      execvp(cmd1[0], cmd1);     
+      //fprintf(stderr, "before cmd1\n");
+      execvp(cmd1[0], cmd1);
+      //fprintf(stderr, "after cmd1\n");      
     }
-    close(pipefd[0]);
-    close(pipefd[1]);
+
+
+    //close(pipefd[0]);
+    //close(pipefd[1]);
     wait(NULL);
 }
+#endif
+
