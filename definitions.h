@@ -25,24 +25,26 @@ char *shellEnv[MAX_SIZE];
 char *shellPaths[MAX_SIZE];
 
 /*Prototypes - Alphabetically*/
-void execute(char *cmd);
+void execute(char *cmd, char **shellArgs);
 void executeSeries(char *var, int floor, int ceil);
 void freeArgs();
 char *getEV(char *var);
 void handle_signal(int signo);
 void initializeEnv(char **envp);
 void initializePaths();
-void interprateEVs(char **cmd);
+void interpretEVs(char **cmd);
 int parseShellCommands(char *cmd);
 void pathPrepend(char *cmd);
 void populateArgs(char *input);
 void processCommand(char *temp);
 void setEV_i(const char *var, int value); //Calls on setEV_s after converting value to string
 void setEV_s(const char *var, char *value);
+void pipeCommand(char** cmd1, char** cmd2);
+void printArgs();
 
 /*Functions ordered according to prototype list*/
 
-void execute(char *cmd)
+void execute(char *cmd, char **shellArgs)
 {
 	int i;
 	if(fork() == 0)
@@ -201,7 +203,7 @@ void initializePaths()
    }
 }
 
-void interprateEVs(char **cmd)
+void interpretEVs(char **cmd)
 {
 	int i, j, n;
 	char *temp, *rv, *ev;
@@ -244,7 +246,7 @@ int parseShellCommands(char *cmd)
 	char *iter, *floor, *ceil;
 	char *temp;
 	
-	interprateEVs(&cmd);
+	interpretEVs(&cmd);
 	
 	//Check EV assignment
 	temp = index(cmd, '=');
@@ -329,6 +331,10 @@ void pathPrepend(char *cmd)
    }
 }
 
+/*
+Takes the input string, parses it, and populates the shellArgs string array
+using space delimiter
+*/
 void populateArgs(char *input)
 {
    char c;
@@ -374,9 +380,64 @@ void processCommand(char *temp)
 		populateArgs(temp);
 		strcpy(cmd, shellArgs[0]);
 		pathPrepend(cmd);
-		execute(cmd);
+        printArgs();
+        if (checkBuiltInCommands() == 0)
+            execute(cmd, shellArgs);
 	   freeArgs();
 	}
+}
+
+// Debug function - Prints out the arguments in shellArgs
+void printArgs()
+{
+    int i = 0;
+    while (shellArgs[i] != NULL) 
+    {
+        printf("Arg[%d]: %s\n", i, shellArgs[i]);
+        i++;
+    }
+}
+
+int checkBuiltInCommands()
+{
+    char *temp1[MAX_SIZE], *temp2[MAX_SIZE];
+    char **arg1 = temp1;
+    char **arg2 = temp2;
+    int i = 0;  // shellArgs index counter
+    int cur_i = 0;
+    int args = 0;   // number of arguments
+    int hasPiped = 0;
+    arg1[0] = arg2[0] = NULL;
+    while (shellArgs[i] != NULL)
+    {
+        if (*arg1 != NULL && *arg2 == NULL)
+        {
+            memcpy(arg2, &shellArgs[cur_i], sizeof(char*) * args);  // copy sub array of pointers
+            arg2[args] = NULL;
+            pipeCommand(arg1, arg2);
+            arg1 = arg2;
+            *arg2 = NULL;
+            args = -1;
+            hasPiped = 1;   // flag pipe has been done
+        }
+        
+        if (strcmp("|", shellArgs[i]) == 0 &&
+            shellArgs[i+1] != NULL )
+        {
+            if (*arg1 == NULL)
+            {
+                memcpy(arg1, &shellArgs[cur_i], sizeof(char*) * args);  // copy sub array of pointers
+                //printf("arg1 %s\n", arg1[0]);
+                arg1[args] = NULL;                              // set null pointer
+                args = 0;                                      // reset args
+                cur_i = i+1;
+            }
+            
+        }
+        i++;
+        args++;
+    }
+    return hasPiped;    // if 1, don't execute single command
 }
 
 void setEV_i(const char *var, int value)
@@ -406,6 +467,7 @@ void setEV_s(const char *var, char *value)
 			strncat(shellEnv[i], "\0", 1);
 			return;
 		}
+        
 		i++;
 	}
 	shellEnv[i] = (char*)malloc(sizeof(char) * (strlen(var)+strlen(value)+2));
@@ -413,4 +475,34 @@ void setEV_s(const char *var, char *value)
 	strncat(shellEnv[i], "=", 1);
 	strncat(shellEnv[i], value, strlen(value));
 	strncat(shellEnv[i], "\0", 1);
+}
+
+/*************************
+This pipes the output of cmd1 into cmd2.
+**************************/
+
+void pipeCommand(char** cmd1, char** cmd2)
+{
+  int pipefd[2];
+  int pid;
+  pipe(pipefd);
+
+  pid = fork();
+
+  if (pid == 0)
+    {
+      dup2(pipefd[0], 0);
+      close(pipefd[1]);
+      wait(NULL);
+      execvp(cmd2[0], cmd2);
+    }
+  else
+    {
+      dup2(pipefd[1], 1);
+      close(pipefd[0]);
+      execvp(cmd1[0], cmd1);     
+    }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
 }
