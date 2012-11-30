@@ -12,14 +12,14 @@
 /*Definitions*/
 #define MAX_SIZE 50
 #define MAX_LEN 200
-#define RESERVED " !@#$%^&*()-_=+1234567890,.<>{}\\|`~\"\'\0\1\2\3\4\5\6\7\a\b\f\n\r\t\v"
+#define RESERVED " !@#$%^&*()-_=+1234567890,.<>{}/\\|`~\"\'\0\1\2\3\4\5\6\7\a\b\f\n\r\t\v"
 
 /*Type definition for signal handling*/
 typedef void (*sighandler_t)(int);
 
 /*Placeholders*/
 char c = '\0';
-char *SHELL_TAG = "[SHELL v0.1]";
+char *SHELL_TAG = "[sh142]";
 char *shellArgs[MAX_SIZE];
 char *shellEnv[MAX_SIZE];
 char *shellPaths[MAX_SIZE];
