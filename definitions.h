@@ -67,7 +67,7 @@ void execute(char *cmd, char **shellArgs)
 int executeP(char *cmd, char **args)
 {
 	int i;
-	if(fork() == 0)
+	//if(fork() == 0)
 	{
 		i = execvpe(cmd, args, shellEnv);
 		
@@ -77,10 +77,10 @@ int executeP(char *cmd, char **args)
 			exit(1);		
 		}
 	}
-	else
-	{
-		wait(NULL);
-	}
+	// else
+	// {
+		// wait(NULL);
+	// }
     return i;
 }
 
@@ -628,7 +628,8 @@ void pipeCommand(char** cmd1, char** cmd2) {
         close(fds[1]);
                     // Execute the first command.
         //fprintf(stderr, "before cmd1\n");
-        execvpe(cmd1[0], cmd1, shellEnv);
+        //execvpe(cmd1[0], cmd1, shellEnv);
+        executeP(cmd1[0], cmd1);
     }
     if (fork() == 0) {
                    // Reassign stdin to fds[0] end of pipe.
@@ -640,7 +641,8 @@ void pipeCommand(char** cmd1, char** cmd2) {
                    // child process #2
         wait(NULL);
         //fprintf(stderr, "before cmd2\n");
-        execvpe(cmd2[0], cmd2, shellEnv);
+        //execvpe(cmd2[0], cmd2, shellEnv);
+        executeP(cmd2[0], cmd2);
     }
     wait(NULL);
     close(fds[0]);
@@ -667,6 +669,7 @@ void pipeCommand(char** cmd1, char** cmd2)
       //fprintf(stderr, "before cmd2\n");
       execvp(cmd2[0], cmd2);
       //fprintf(stderr, "after cmd2\n");
+
     }
   else
     {
